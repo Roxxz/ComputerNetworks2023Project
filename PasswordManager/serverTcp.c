@@ -17,10 +17,49 @@
 /* codul de eroare returnat de anumite apeluri */
 extern int errno;
 
-int add_record(char *record)
+int get_details(char *str, char **usn, char **pws, char **ctg, char **ttl, char **nts, char **url)
+{
+    char delim[] = " ";
+
+	char *ptr = strtok(str, delim);
+    int no = 0;
+
+	while(ptr != NULL)
+	{
+		printf("'%s'\n", ptr);
+        if (no == 1){
+            *usn = ptr;
+        }
+        else if (no == 2){
+            *pws = ptr;
+        }
+        else if (no == 3){
+            *ctg = ptr;
+        }
+        else if (no == 4){
+            *ttl = ptr;
+        }
+        else if (no == 5){
+            *nts = ptr;
+        }
+        else if (no == 6){
+            *url = ptr;
+        }
+        no++;
+        printf(" get details no = %u", no);
+		ptr = strtok(NULL, delim);
+	}
+    if (no < 4)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int add_record(char *record, char *filename)
 {
     FILE *fp;
-    char filename[] = "users.txt";
+    // char filename[] = "users.txt";
     char line[50];
 
     fp = fopen(filename, "a");
@@ -213,8 +252,8 @@ int main ()
                             printf("usn: %s\npass: %s\n", username, password);
                             char record[50];
                             strcpy(record, username);
-                            strcpy(record, ";");
-                            strcpy(record, password);
+                            strcat(record, ";");
+                            strcat(record, password);
                             if (check_credentials(record))
                             {
                                 logged_in = 1;
@@ -245,29 +284,58 @@ int main ()
                         {
                             printf("new usn: %s\nnew pass: %s\n", newUsername, newPassword);
                             char record[50];
-                            // strcpy(record, newUsername);
-                            // printf("record= %s\n", record);
-                            strcpy(newUsername, ";");
-                            printf("record= %s\n", newUsername);
-                            strcpy(newUsername, newPassword);
-                            strcpy(newUsername, ";");
-                            printf("record= %s\n", newUsername);
-                            strcpy(sent_msg, "testing.");
-                            // if(add_record(record))
-                            // {
-                            //     strcpy(sent_msg, "New record registered.");
-                            // }
-                            // else
-                            // {
-                            //     strcpy(sent_msg, "Something wrong at registering.");
-                            // }
+                            strcpy(record, "\n");
+                            strcat(record, newUsername);
+                            strcat(record, ";");
+                            strcat(record, newPassword);
+                            strcat(record, ";");
+                            if(add_record(record, "users.txt"))
+                            {
+                                strcpy(sent_msg, "New record registered.");
+                            }
+                            else
+                            {
+                                strcpy(sent_msg, "Something wrong at registering.");
+                            }
                         }
                     }
                     else{
-                        char *newUsername, *newPassword;
-                        get_credentials(recv_msg, &newUsername, &newPassword);
-                        printf("new usn: %s\nnew pass: %s\n", newUsername, newPassword);
-                        strcpy(sent_msg, "Registered.");
+                        char *usn, *pws, *ctg, *ttl, *nts, *url;
+                        if (get_details(recv_msg, &usn, &pws, &ctg, &ttl, &nts, &url))
+                        {
+                            strcpy(sent_msg, "Syntax is: register {username} {password} {category} [{title, notes, url}]");
+
+                        }
+                        else
+                        {
+                            char record[BUFFSIZE], filename[20];
+                            printf("%s, %s, %s, %s, %s, %s\n", usn, pws, ctg, ttl, nts, url);
+                            strcpy(record, "\n");
+                            strcat(record, pws);
+                            strcat(record, ";");
+                            strcat(record, usn);
+                            strcat(record, ";");
+                            strcat(record, ctg);
+                            strcat(record, ";");
+                            strcat(record, ttl);
+                            strcat(record, ";");
+                            strcat(record, nts);
+                            strcat(record, ";");
+                            strcat(record, url);
+                            strcat(record, ";");
+
+                            strcpy(filename, usn);
+                            strcat(filename, "manager.txt");
+                            if(add_record(record, filename))
+                            {
+                                strcpy(sent_msg, "Registered.");
+                            }
+                            else
+                            {
+                                strcpy(sent_msg, "Something wrong at registering.");
+                            }
+                        }
+
                     }
                     break;
                 default:
