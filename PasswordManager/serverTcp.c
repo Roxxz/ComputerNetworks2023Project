@@ -225,7 +225,9 @@ int main ()
     struct sockaddr_in server;	// structura folosita de server
     struct sockaddr_in from;
     char sent_msg[BUFFSIZE], recv_msg[BUFFSIZE];
-    char welcome_msg[BUFFSIZE] = "____Password Manager____";
+    char welcome_msg[BUFFSIZE] = "____Password Manager____\n";
+    char contents[BUFFSIZE] = "{password};{username};{category};{title};{notes};{url};\n";
+    char commands[BUFFSIZE] = "login, register, show [{category}], delete {usn} {psw}, quit\n";
     int sd;			//descriptorul de socket
 
     /* crearea unui socket */
@@ -295,6 +297,7 @@ int main ()
 			int logged_in = 0;
             char logged_user[20];
 			close(sd);
+            strcat(welcome_msg, commands);
 			if (write(client, welcome_msg, strlen(welcome_msg)) <= 0)
 			{
 				perror("Eroare la scriere catre client.\n");
@@ -442,7 +445,8 @@ int main ()
                         strcpy(filename, logged_user);
                         strcat(filename, "manager.txt");
                         show_pass(recv_msg, &allpass, filename);
-					    strcpy(sent_msg, allpass);
+					    strcpy(sent_msg, contents);
+					    strcat(sent_msg, allpass);
                     }
 
                     break;
@@ -468,7 +472,8 @@ int main ()
                         strcpy(filename, logged_user);
                         strcat(filename, "manager.txt");
                         show_ctg_pass(recv_msg, category, &ctgpass, filename);
-					    strcpy(sent_msg, ctgpass);
+					    strcpy(sent_msg, contents);
+					    strcat(sent_msg, ctgpass);
                     }
                 
                     break;
