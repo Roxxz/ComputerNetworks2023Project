@@ -17,6 +17,70 @@
 /* codul de eroare returnat de anumite apeluri */
 extern int errno;
 
+void delete_record(char *record, char *filename)
+{
+    FILE *fp, *ft;
+    char line[50];
+
+    ft = fopen("temp.txt", "w");
+    fp = fopen(filename, "r");
+    while (fgets(line, 50, fp) != NULL)
+    {
+        if (!strstr(line, record))
+            fputs(line, ft);
+    }
+
+    fclose(fp);
+    fclose(ft);
+    remove(filename);
+    rename("temp.txt", filename);
+}
+
+void show_ctg_pass(char *str, char *ctg, char **ctgpass, char *filename)
+{
+    FILE *fp;
+    char line[50];
+    char info[BUFFSIZE];
+
+    fp = fopen(filename, "r");
+    if (!fp)
+    {
+            perror("File does not exist!");
+            exit(0);
+    }
+    strcpy(info, "");
+    while (fgets(line, 50, fp) != NULL)
+    {
+        if (strstr(line, ctg))
+        {
+            strcat(info, line);
+        }
+    }
+    *ctgpass = info;
+    fclose(fp);
+}
+
+void show_pass(char *str, char **allpass, char *filename)
+{
+    FILE *fp;
+    char line[50];
+    char info[BUFFSIZE];
+
+    fp = fopen(filename, "r");
+    if (!fp)
+    {
+            perror("File does not exist!");
+            exit(0);
+    }
+    strcpy(info, "");
+    while (fgets(line, 50, fp) != NULL)
+    {
+        strcat(info, line);
+    }
+    *allpass = info;
+    fclose(fp);
+}
+
 int get_details(char *str, char **usn, char **pws, char **ctg, char **ttl, char **nts, char **url)
 {
     char delim[] = " ";
@@ -45,8 +109,17 @@ int get_details(char *str, char **usn, char **pws, char **ctg, char **ttl, char 
         else if (no == 6){
             *url = ptr;
         }
+        else
+        {
+            *usn = " ";
+            *pws = " ";
+            *ctg = " ";
+            *ttl = " ";
+            *nts = " ";
+            *url = " ";
+        }
         no++;
-        printf(" get details no = %u", no);
+        // printf(" get details no = %u\n", no);
 		ptr = strtok(NULL, delim);
 	}
     if (no < 4)
@@ -59,16 +132,19 @@ int get_details(char *str, char **usn, char **pws, char **ctg, char **ttl, char 
 int add_record(char *record, char *filename)
 {
     FILE *fp;
-    // char filename[] = "users.txt";
     char line[50];
+    // printf("filename= %s\n", filename);
 
-    fp = fopen(filename, "a");
+    fp = fopen(filename, "r");
     if (!fp)
     {
-        perror("File does not exist!");
-        exit(0);
+        printf("%s\n", "File does not exist...creating now.");
+        // perror("File does not exist!");
+        fp = fopen(filename, "w");
+        // exit(0);
     }
-    printf("record= %s\n", record);
+    fclose(fp);
+    fp = fopen(filename, "a");
     fputs(record, fp);
     fclose(fp);
     return 1;
@@ -133,6 +209,14 @@ int ret_cod(char *s)
 		return 1;
     if (strstr(s, "register"))
 		return 2;
+    if (strcmp(s, "show") == 0)
+		return 3;
+    if (strstr(s, "show"))
+		return 4;
+    if (!strcmp(s, "delete"))
+		return 0;
+    if (strstr(s, "delete"))
+		return 5;
 	return 0;
 }
 
@@ -209,6 +293,7 @@ int main ()
 		{
 			// copil, pentru fiecare client
 			int logged_in = 0;
+            char logged_user[20];
 			close(sd);
 			if (write(client, welcome_msg, strlen(welcome_msg)) <= 0)
 			{
@@ -231,7 +316,7 @@ int main ()
 				printf("Mesajul primit: %s\n", recv_msg);
 
 				// int cod_msg = ret_cod(recv_msg);
-                printf("cod = %u\n", ret_cod(recv_msg));
+                // printf("cod = %u\n", ret_cod(recv_msg));
 				switch (ret_cod(recv_msg))
 				{
 				case -1:
@@ -246,10 +331,10 @@ int main ()
                         char *username, *password;
                         if (get_credentials(recv_msg, &username, &password))
                         {
-                            strcpy(sent_msg, "Syntax is: login {username} {password}");
+                            strcpy(sent_msg, "Syntax: login {username} {password}");
                         }
                         else{
-                            printf("usn: %s\npass: %s\n", username, password);
+                            // printf("usn: %s\npass: %s\n", username, password);
                             char record[50];
                             strcpy(record, username);
                             strcat(record, ";");
@@ -257,6 +342,7 @@ int main ()
                             if (check_credentials(record))
                             {
                                 logged_in = 1;
+                                strcpy(logged_user, username);
                                 strcpy(sent_msg, "You are logged now.");
                             }
                             else
@@ -278,11 +364,11 @@ int main ()
                         char *newUsername, *newPassword;
                         if (get_credentials(recv_msg, &newUsername, &newPassword))
                         {
-                            strcpy(sent_msg, "Syntax is: register {username} {password}");
+                            strcpy(sent_msg, "Syntax: register {username} {password}");
                         }
                         else
                         {
-                            printf("new usn: %s\nnew pass: %s\n", newUsername, newPassword);
+                            // printf("new usn: %s\nnew pass: %s\n", newUsername, newPassword);
                             char record[50];
                             strcpy(record, "\n");
                             strcat(record, newUsername);
@@ -300,33 +386,38 @@ int main ()
                         }
                     }
                     else{
+                    
                         char *usn, *pws, *ctg, *ttl, *nts, *url;
+
                         if (get_details(recv_msg, &usn, &pws, &ctg, &ttl, &nts, &url))
                         {
-                            strcpy(sent_msg, "Syntax is: register {username} {password} {category} [{title, notes, url}]");
+                            strcpy(sent_msg, "Syntax: register {username} {password} {category} [{title, notes, url}]");
 
                         }
                         else
                         {
-                            char record[BUFFSIZE], filename[20];
-                            printf("%s, %s, %s, %s, %s, %s\n", usn, pws, ctg, ttl, nts, url);
-                            strcpy(record, "\n");
-                            strcat(record, pws);
-                            strcat(record, ";");
-                            strcat(record, usn);
-                            strcat(record, ";");
-                            strcat(record, ctg);
-                            strcat(record, ";");
-                            strcat(record, ttl);
-                            strcat(record, ";");
-                            strcat(record, nts);
-                            strcat(record, ";");
-                            strcat(record, url);
-                            strcat(record, ";");
+                            // printf("%s, %s, %s, %s, %s, %s\n", usn, pws, ctg, ttl, nts, url);
+                            char new_record[300];
+                            char filename[20];
+                            strcpy(new_record, "\n");
+                            strcat(new_record, pws);
+                            strcat(new_record, ";");
+                            strcat(new_record, usn);
+                            strcat(new_record, ";");
+                            strcat(new_record, ctg);
+                            strcat(new_record, ";");
+                            strcat(new_record, ttl);
+                            strcat(new_record, ";");
+                            strcat(new_record, nts);
+                            strcat(new_record, ";");
+                            strcat(new_record, url);
+                            strcat(new_record, ";");
 
-                            strcpy(filename, usn);
+                            strcpy(filename, logged_user);
                             strcat(filename, "manager.txt");
-                            if(add_record(record, filename))
+                            // printf("record= %s\nfilename= %s\n", new_record, filename);
+                            
+                            if(add_record(new_record, filename))
                             {
                                 strcpy(sent_msg, "Registered.");
                             }
@@ -338,9 +429,89 @@ int main ()
 
                     }
                     break;
+                case 3:
+                    bzero(sent_msg, BUFFSIZE);
+                    if(!logged_in)
+                    {
+					    strcpy(sent_msg, "You have to log in to show passwords.");
+                    }
+                    else
+                    {
+                        char *allpass;
+                        char filename[50];
+                        strcpy(filename, logged_user);
+                        strcat(filename, "manager.txt");
+                        show_pass(recv_msg, &allpass, filename);
+					    strcpy(sent_msg, allpass);
+                    }
+
+                    break;
+                case 4:
+                    bzero(sent_msg, BUFFSIZE);
+                    if(!logged_in)
+                    {
+					    strcpy(sent_msg, "You have to log in to show passwords.");
+                    }
+                    else
+                    {
+                        char category[10];
+                        char delim[] = " ";
+                        char *ptr = strtok(recv_msg, delim);
+                        int no = 0;
+                        while(ptr != NULL)
+                        {
+                            strcpy(category, ptr);
+                            ptr = strtok(NULL, delim);
+                        }
+                        char *ctgpass;
+                        char filename[50];
+                        strcpy(filename, logged_user);
+                        strcat(filename, "manager.txt");
+                        show_ctg_pass(recv_msg, category, &ctgpass, filename);
+					    strcpy(sent_msg, ctgpass);
+                    }
+                
+                    break;
+                case 5:
+                    bzero(sent_msg, BUFFSIZE);
+                    if(!logged_in)
+                    {
+					    strcpy(sent_msg, "You have to log in to delete records.");
+                    }
+                    else
+                    {
+                        char usn[30], psw[30], filename[30], record[60];
+                        char delim[] = " ";
+                        char *ptr = strtok(recv_msg, delim);
+                        int no = 0;
+                        while(ptr != NULL)
+                        {
+                            if(no == 1)
+                            {
+                                strcpy(usn, ptr);
+                            }
+                            else if(no == 2)
+                            {
+                                strcpy(psw, ptr);
+                            }
+                            no++;
+                            ptr = strtok(NULL, delim);
+                        }
+                        // printf("delete usn = %s and %s\n", usn, psw);
+                        strcpy(filename, logged_user);
+                        strcat(filename, "manager.txt");
+                        strcpy(record, psw);
+                        strcat(record, ";");
+                        strcat(record, usn);
+                        // printf("delete record %s\n", record);
+                        delete_record(record, filename);
+					    strcpy(sent_msg, "Record deleted. Type show to verify.");
+                    }
+
+                    break;
                 default:
 					bzero(sent_msg, BUFFSIZE);
-					strcpy(sent_msg, "Command not valid");
+					strcpy(sent_msg, "Command not valid.");
 					break;
 				}
 				printf("Trimitem mesajul:%s\n", sent_msg);
