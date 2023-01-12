@@ -90,7 +90,6 @@ int get_details(char *str, char **usn, char **pws, char **ctg, char **ttl, char 
 
 	while(ptr != NULL)
 	{
-		printf("'%s'\n", ptr);
         if (no == 1){
             *usn = ptr;
         }
@@ -119,7 +118,6 @@ int get_details(char *str, char **usn, char **pws, char **ctg, char **ttl, char 
             *url = " ";
         }
         no++;
-        // printf(" get details no = %u\n", no);
 		ptr = strtok(NULL, delim);
 	}
     if (no < 4)
@@ -133,15 +131,12 @@ int add_record(char *record, char *filename)
 {
     FILE *fp;
     char line[50];
-    // printf("filename= %s\n", filename);
 
     fp = fopen(filename, "r");
     if (!fp)
     {
         printf("%s\n", "File does not exist...creating now.");
-        // perror("File does not exist!");
         fp = fopen(filename, "w");
-        // exit(0);
     }
     fclose(fp);
     fp = fopen(filename, "a");
@@ -184,7 +179,6 @@ int get_credentials(char *str, char **username, char **password)
 
 	while(ptr != NULL)
 	{
-		// printf("'%s'\n", ptr);
         if (no == 1){
             *username = ptr;
         }
@@ -318,8 +312,6 @@ int main ()
 				}
 				printf("Mesajul primit: %s\n", recv_msg);
 
-				// int cod_msg = ret_cod(recv_msg);
-                // printf("cod = %u\n", ret_cod(recv_msg));
 				switch (ret_cod(recv_msg))
 				{
 				case -1:
@@ -337,7 +329,6 @@ int main ()
                             strcpy(sent_msg, "Syntax: login {username} {password}");
                         }
                         else{
-                            // printf("usn: %s\npass: %s\n", username, password);
                             char record[50];
                             strcpy(record, username);
                             strcat(record, ";");
@@ -371,7 +362,6 @@ int main ()
                         }
                         else
                         {
-                            // printf("new usn: %s\nnew pass: %s\n", newUsername, newPassword);
                             char record[50];
                             strcpy(record, "\n");
                             strcat(record, newUsername);
@@ -399,7 +389,6 @@ int main ()
                         }
                         else
                         {
-                            // printf("%s, %s, %s, %s, %s, %s\n", usn, pws, ctg, ttl, nts, url);
                             char new_record[300];
                             char filename[20];
                             strcpy(new_record, "\n");
@@ -418,7 +407,6 @@ int main ()
 
                             strcpy(filename, logged_user);
                             strcat(filename, "manager.txt");
-                            // printf("record= %s\nfilename= %s\n", new_record, filename);
                             
                             if(add_record(new_record, filename))
                             {
@@ -502,13 +490,11 @@ int main ()
                             no++;
                             ptr = strtok(NULL, delim);
                         }
-                        // printf("delete usn = %s and %s\n", usn, psw);
                         strcpy(filename, logged_user);
                         strcat(filename, "manager.txt");
                         strcpy(record, psw);
                         strcat(record, ";");
                         strcat(record, usn);
-                        // printf("delete record %s\n", record);
                         delete_record(record, filename);
 					    strcpy(sent_msg, "Record deleted. Type show to verify.");
                     }
